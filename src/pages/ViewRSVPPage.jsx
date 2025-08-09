@@ -280,7 +280,7 @@ export default function ViewRSVPPage() {
                 <p className="text-sm text-white/80 mt-1">
                   Browse and download photos/videos shared by guests and the couple.
                 </p>
-                <button className="btn-primary mt-3" onClick={() => navigate("/wedding-album")}>
+                <button className="btn-primary mt-3" onClick={() => navigate("/album")}>
                   Open Wedding Album
                 </button>
               </div>
