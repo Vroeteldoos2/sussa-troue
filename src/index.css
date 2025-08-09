@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Sunflower base look */
+:root {
+  --bg: #FFF8E1; /* sunflower-50 */
+}
+body {
+  @apply bg-[var(--bg)] text-soil-700;
+}
+.card {
+  @apply bg-white rounded-xl2 shadow-soft border border-sunflower-100;
+}
+.btn-primary {
+  @apply inline-flex items-center justify-center px-4 py-2 rounded-xl2
+         bg-sunflower-500 hover:bg-sunflower-600 text-soil-700 font-semibold;
+}
+.btn-outline {
+  @apply inline-flex items-center justify-center px-4 py-2 rounded-xl2
+         border border-soil-300 text-soil-700 hover:bg-sunflower-50;
+}
+.input {
+  @apply w-full rounded-xl2 border border-sunflower-200 bg-white px-3 py-2
+         focus:outline-none focus:ring-2 focus:ring-sunflower-300;
+}
+.section-title {
+  @apply text-2xl font-bold text-soil-700;
+}
+.badge {
+  @apply rounded-full px-2 py-0.5 text-xs bg-sunflower-100 text-soil-700 border border-sunflower-200;
+}
