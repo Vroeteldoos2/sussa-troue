@@ -12,6 +12,10 @@ import { supabase } from "./supabaseClient";
 
 // PAGES
 import LoginPage from "./pages/LoginPage";
+import SignupPage from "./pages/SignupPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
+import ResetPasswordUpdatePage from "./pages/ResetPasswordUpdatePage";
+
 import RSVPPage from "./pages/RSVPPage";
 import ViewRSVPPage from "./pages/ViewRSVPPage";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -32,15 +36,10 @@ function AppShell() {
     (async () => {
       const { data, error } = await supabase.auth.getSession();
       if (!error) setSession(data?.session || null);
-
-      const res = supabase.auth.onAuthStateChange((_event, s) => {
-        setSession(s);
-      });
+      const res = supabase.auth.onAuthStateChange((_event, s) => setSession(s));
       sub = res?.data?.subscription;
-
       setAuthLoading(false);
     })();
-
     return () => sub?.unsubscribe?.();
   }, []);
 
@@ -52,20 +51,40 @@ function AppShell() {
     );
   }
 
-  // Only show navbar when logged in (prevents flicker on /login)
+  // Only show navbar when logged in (prevents flicker on auth pages)
   const showNav = !!session;
 
   return (
     <>
       {showNav && <NavigationBar />}
       <Routes>
-        {/* Always default to /login */}
+        {/* Default → /login */}
         <Route path="/" element={<Navigate to="/login" replace />} />
 
-        {/* Public: Login */}
+        {/* Public auth routes (redirect to /rsvp if already logged in) */}
         <Route
           path="/login"
           element={session ? <Navigate to="/rsvp" replace /> : <LoginPage />}
+        />
+        <Route
+          path="/signup"
+          element={session ? <Navigate to="/rsvp" replace /> : <SignupPage />}
+        />
+        <Route
+          path="/reset"
+          element={
+            session ? <Navigate to="/rsvp" replace /> : <ResetPasswordPage />
+          }
+        />
+        <Route
+          path="/reset-password"
+          element={
+            session ? (
+              <Navigate to="/rsvp" replace />
+            ) : (
+              <ResetPasswordUpdatePage />
+            )
+          }
         />
 
         {/* Protected routes */}
@@ -122,7 +141,6 @@ function RequireAdmin() {
         setChecking(false);
         return;
       }
-
       const { data: prof } = await supabase
         .from("profiles")
         .select("is_admin")
@@ -140,7 +158,6 @@ function RequireAdmin() {
         setChecking(false);
       }
     })();
-
     return () => {
       mounted = false;
     };
