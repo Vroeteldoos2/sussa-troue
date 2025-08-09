@@ -146,7 +146,7 @@ export default function WeddingAlbumPage() {
           </div>
 
           {(!API_KEY || !PHOTOS_FOLDER || !VIDEOS_FOLDER) && (
-            <div className="text-sm text-amber-200 bg-amber-900/20 border border-amber-300/40 rounded-md p-2 mb-4">
+            <div className="text-sm text-white-200 bg-amber-900/20 border border-amber-300/40 rounded-md p-2 mb-4">
               Missing envs. Set <code>REACT_APP_GOOGLE_API_KEY</code>,{" "}
               <code>REACT_APP_DRIVE_PHOTOS_FOLDER_ID</code>,{" "}
               <code>REACT_APP_DRIVE_VIDEOS_FOLDER_ID</code> and restart the dev server.
