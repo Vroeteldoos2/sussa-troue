@@ -23,7 +23,7 @@ export default function ViewRSVPPage() {
   const [saving, setSaving] = useState(false);
   const confettiFired = useRef(false);
 
-  const countdown = useCountdown(ENV.WEDDING_DATE_TIME || "2025-11-08T14:30:00+02:00");
+  const countdown = useCountdown(ENV.WEDDING_DATE_TIME || "2025-11-08T15:30:00+02:00");
   const isValidEmail = (v) => /^\S+@\S+\.\S+$/.test(v || "");
 
   useEffect(() => {
@@ -198,7 +198,7 @@ export default function ViewRSVPPage() {
   if (rsvp && !edit) {
     const weddingAtText = (ENV.WEDDING_DATE_TIME
       ? dayjs(ENV.WEDDING_DATE_TIME)
-      : dayjs("2025-11-08T14:30:00+02:00")
+      : dayjs("2025-11-08T15:30:00+02:00")
     ).format("dddd, D MMMM YYYY [at] HH:mm");
 
     const mapsHref = ENV.VENUE_ADDRESS
