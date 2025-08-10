@@ -4,10 +4,12 @@ import Card from "../components/Card";
 import useCountdown from "../hooks/useCountdown";
 import { APP_VARS } from "../config/media";
 
-const SAFER_WAYPOINT = "Boshoek, North West";
+// Safer road coordinates (decimal from 25°30'10.9"S 27°05'40.2"E)
+const SAFER_COORDINATE = "-25.503028,27.0945";
+
 const SHOW_DISCLAIMER = true;
 const DISCLAIMER_TEXT =
-  "Note: There’s a rough section on one of the direct routes. For a smoother drive, use the ‘Safer Route via Boshoek’ below.";
+  "Note: One of the direct routes has a rough section. Use the ‘Safest Route’ below which follows the preferred road.";
 
 export default function VenuePage() {
   const countdown = useCountdown(APP_VARS.WEDDING_DATE_TIME);
@@ -15,15 +17,15 @@ export default function VenuePage() {
   const venueAddress = APP_VARS.VENUE_ADDRESS || "South Africa";
   const venueName = APP_VARS.VENUE_NAME || "To be announced";
 
-  // Fastest route
-  const fastestRouteUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
+  // Safest route link (coordinate as normal waypoint)
+  const safestRouteUrl = `https://www.google.com/maps/dir/?api=1&origin=Current+Location&destination=${encodeURIComponent(
+    venueAddress
+  )}&waypoints=${encodeURIComponent(SAFER_COORDINATE)}&travelmode=driving`;
+
+  // Fastest route link (no waypoint)
+  const fastestRouteUrl = `https://www.google.com/maps/dir/?api=1&origin=Current+Location&destination=${encodeURIComponent(
     venueAddress
   )}&travelmode=driving`;
-
-  // Safer route via Boshoek
-  const saferRouteUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
-    venueAddress
-  )}&waypoints=${encodeURIComponent(SAFER_WAYPOINT)}&travelmode=driving`;
 
   return (
     <Backdrop>
@@ -61,14 +63,14 @@ export default function VenuePage() {
 
           {APP_VARS.VENUE_ADDRESS && (
             <div className="mt-4 flex flex-wrap gap-3">
-              {/* Safer Route - highlighted */}
+              {/* Safest Route */}
               <a
                 className="btn-primary"
-                href={saferRouteUrl}
+                href={safestRouteUrl}
                 target="_blank"
                 rel="noreferrer"
               >
-                Safer Route via Boshoek
+                Safest Route (preferred road)
               </a>
 
               {/* Fastest Route */}
