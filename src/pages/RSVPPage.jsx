@@ -4,6 +4,16 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import { toast } from "react-hot-toast";
 
+/**
+ * =========================
+ * RSVP GATE CONFIG
+ * =========================
+ * - Flip RSVPS_OPEN to true to reopen RSVPs immediately.
+ * - Or set RSVPS_CLOSES_AT to auto-close after a date/time.
+ */
+const RSVPS_OPEN = false; // <- set to true to reopen RSVPs for new users
+const RSVPS_CLOSES_AT = null; // e.g. new Date("2025-09-30T23:59:59+02:00")
+
 const BG_URL =
   "https://cyxeucwesqzwlisgveiz.supabase.co/storage/v1/object/public/public-assets/flowers-8309997.jpg";
 
@@ -29,6 +39,7 @@ export default function RSVPPage() {
   const [loading, setLoading] = useState(false); // submit loading
   const [pageLoading, setPageLoading] = useState(true); // initial page gate
   const [formErr, setFormErr] = useState("");
+  const [rsvpsClosedForThisUser, setRsvpsClosedForThisUser] = useState(false);
 
   const isValidEmail = useMemo(
     () => (v) => /^\S+@\S+\.\S+$/.test(v || ""),
@@ -63,23 +74,37 @@ export default function RSVPPage() {
       // Check if RSVP exists by user_id
       const { data: existing, error: rsvpErr } = await supabase
         .from("rsvps")
-        .select("*")
+        .select("id")
         .eq("user_id", user.id)
         .limit(1)
         .maybeSingle();
 
       if (rsvpErr) {
         console.error(rsvpErr);
+        toast.error("Could not check RSVP status.");
+        setPageLoading(false);
+        return;
       }
 
       if (existing) {
+        // Existing RSVP holders go straight to the view page
         navigate("/view-rsvp", { replace: true });
         return;
       }
 
+      // New user (no RSVP yet) → decide if closed or open
+      const isDateClosed =
+        RSVPS_CLOSES_AT instanceof Date
+          ? new Date() > RSVPS_CLOSES_AT
+          : false;
+
+      if (!RSVPS_OPEN || isDateClosed) {
+        setRsvpsClosedForThisUser(true);
+      }
+
       setPageLoading(false);
     })();
-  }, []);
+  }, [navigate]);
 
   const setField = (key, val) => setForm((f) => ({ ...f, [key]: val }));
   const togglePlusOne = (checked) =>
@@ -128,6 +153,14 @@ export default function RSVPPage() {
       return;
     }
 
+    // Gate: defensive check — if someone bypasses UI when closed
+    const isDateClosed =
+      RSVPS_CLOSES_AT instanceof Date ? new Date() > RSVPS_CLOSES_AT : false;
+    if (!RSVPS_OPEN || isDateClosed) {
+      toast.error("RSVPs are currently closed.");
+      return;
+    }
+
     const fullName = (form.full_name || "").trim();
     if (!fullName) return setFormErr("Please enter your full name.");
     if (!isValidEmail(authEmail))
@@ -156,9 +189,11 @@ export default function RSVPPage() {
 
     setLoading(true);
     try {
+      // Insert NEW primary RSVP
       const { error } = await supabase.from("rsvps").insert([payload]);
       if (error) throw error;
 
+      // Insert behalf-of RSVPs
       for (const g of behalfList) {
         const gName = (g.full_name || "").trim();
         if (!gName) continue;
@@ -192,6 +227,52 @@ export default function RSVPPage() {
     );
   }
 
+  // NEW USERS (no RSVP) & closed gate → Closed screen
+  if (rsvpsClosedForThisUser) {
+    return (
+      <div
+        className="min-h-screen w-full bg-center bg-cover relative"
+        style={{ backgroundImage: `url(${BG_URL})` }}
+        aria-hidden="true"
+      >
+        <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px]" />
+        <div className="relative z-10 max-w-3xl mx-auto px-4 py-16">
+          <header className="text-center my-6 text-white drop-shadow">
+            <h1 className="text-3xl font-extrabold">
+              RSVP for{" "}
+              <span className="text-yellow-200">Abraham &amp; Jesse-Lee</span>
+            </h1>
+            <p className="text-white/90">We can’t wait to celebrate with you.</p>
+          </header>
+
+          <div className="bg-white/90 rounded-2xl shadow-xl border border-white/60 p-8 text-center">
+            <h2 className="text-2xl font-bold mb-2">RSVPs are now closed</h2>
+            <p className="text-gray-700">
+              Thanks for your interest. We’re no longer accepting new RSVPs.
+              If you believe this is a mistake, please contact the organizers.
+              <center>Jesse - +27 73 289 2430  
+              | Abraham - +27 66 200 8218</center>
+            </p>
+
+            <div className="mt-6 flex items-center justify-center gap-3">
+              <a
+                href="/"
+                className="btn-outline inline-block px-4 py-2 rounded-lg border"
+              >
+                Back to Home
+              </a>
+            </div>
+
+            <div className="mt-4 text-sm text-gray-500">
+              Logged in as <span className="font-medium">{authEmail}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // If we reach here: new user (no RSVP) AND the gate is open → show the full form
   return (
     <div
       className="min-h-screen w-full bg-center bg-cover relative"
@@ -203,7 +284,8 @@ export default function RSVPPage() {
       <div className="relative z-10 max-w-5xl mx-auto px-4 py-10">
         <header className="text-center my-6 text-white drop-shadow">
           <h1 className="text-3xl font-extrabold">
-            RSVP for <span className="text-yellow-200">Abraham & Jesse-Lee</span>
+            RSVP for{" "}
+            <span className="text-yellow-200">Abraham &amp; Jesse-Lee</span>
           </h1>
           <p className="text-white/90">We can’t wait to celebrate with you.</p>
         </header>
