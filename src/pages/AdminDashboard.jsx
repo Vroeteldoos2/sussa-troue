@@ -131,22 +131,180 @@ export default function AdminDashboard() {
   };
 
   const exportPDF = () => {
-    const doc = new jsPDF();
-    doc.text("RSVPs - Abraham & Jesse-Lee", 14, 16);
-    let y = 24;
-    filtered.forEach((r, i) => {
-      const line = `${i + 1}. ${r.full_name || "-"} | ${r.email || "-"} | ${
-        r.attending ? "Attending" : "Not"
-      } | ${r.dietary || "-"} | ${r.songs || "-"}`;
-      const split = doc.splitTextToSize(line, 180);
-      doc.text(split, 14, y);
-      y += split.length * 7 + 2;
-      if (y > 280) {
-        doc.addPage();
-        y = 16;
-      }
+    // Create PDF in landscape orientation
+    const doc = new jsPDF({
+      orientation: 'landscape',
+      unit: 'mm',
+      format: 'a4'
     });
-    doc.save("rsvps.pdf");
+    
+    // Helper function to parse children array
+    const parseChildren = (val) => {
+      if (Array.isArray(val)) return val;
+      if (typeof val === "string") {
+        try {
+          const parsed = JSON.parse(val);
+          return Array.isArray(parsed) ? parsed : [];
+        } catch {
+          return [];
+        }
+      }
+      return [];
+    };
+
+    // Title styling
+    doc.setFontSize(20);
+    doc.setTextColor(44, 62, 80);
+    doc.text("Wedding RSVPs", 148.5, 20, { align: "center" });
+    
+    doc.setFontSize(14);
+    doc.setTextColor(52, 73, 94);
+    doc.text("Abraham & Jesse-Lee", 148.5, 30, { align: "center" });
+    
+    // Date
+    doc.setFontSize(10);
+    doc.setTextColor(127, 140, 141);
+    doc.text(`Generated: ${new Date().toLocaleDateString()}`, 148.5, 38, { align: "center" });
+    
+    // Summary stats
+    doc.setFontSize(11);
+    doc.setTextColor(44, 62, 80);
+    doc.text(`Total RSVPs: ${filtered.length} | Attending: ${attendingCount} | Not Attending: ${notAttendingCount}`, 14, 48);
+    doc.text(`Plus Ones: ${plusOnesCount} | Total Kids: ${kidsCount}`, 14, 55);
+    
+    // Line separator
+    doc.setDrawColor(189, 195, 199);
+    doc.line(14, 60, 283, 60);
+    
+    let y = 70;
+    
+    // Helper function to add table headers
+    const addHeaders = () => {
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'bold');
+      doc.setFillColor(254, 235, 200); // Light sunflower color
+      doc.rect(14, y - 5, 269, 8, 'F');
+      doc.setTextColor(44, 62, 80);
+      doc.text("Name", 16, y);
+      doc.text("Email", 60, y);
+      doc.text("Status", 110, y);
+      doc.text("Plus One", 135, y);
+      doc.text("Kids", 155, y);
+      doc.text("Dietary", 195, y);
+      doc.text("Songs", 240, y);
+      y += 10;
+      doc.setFont(undefined, 'normal');
+    };
+    
+    // Add initial headers
+    addHeaders();
+    
+    filtered.forEach((r, i) => {
+      // Parse children for this row
+      const childrenArr = parseChildren(r.children);
+      const kidsInfo = childrenArr.length > 0 
+        ? `${childrenArr.length} (${childrenArr.map(c => c.name || 'unnamed').join(', ')})`
+        : "0";
+      
+      // Prepare all text with wrapping
+      doc.setFontSize(9);
+      const name = r.full_name || "-";
+      const email = r.email || "-";
+      const dietary = r.dietary || "-";
+      const songs = r.songs || "-";
+      
+      // Calculate wrapped text for each column
+      const nameLines = doc.splitTextToSize(name, 42); // 42mm width for name
+      const emailLines = doc.splitTextToSize(email, 48); // 48mm width for email
+      const kidsLines = doc.splitTextToSize(kidsInfo, 38); // 38mm width for kids
+      const dietaryLines = doc.splitTextToSize(dietary, 42); // 42mm width for dietary
+      const songsLines = doc.splitTextToSize(songs, 42); // 42mm width for songs
+      
+      // Calculate max lines needed for this row
+      const maxLines = Math.max(
+        nameLines.length,
+        emailLines.length,
+        kidsLines.length,
+        dietaryLines.length,
+        songsLines.length
+      );
+      
+      // Calculate row height (5mm per line minimum)
+      const rowHeight = Math.max(7, maxLines * 5 + 2);
+      
+      // Check if we need a new page
+      if (y + rowHeight > 190) {
+        doc.addPage();
+        y = 20;
+        addHeaders();
+      }
+      
+      // Draw row background with better contrast
+      if (i % 2 === 0) {
+        doc.setFillColor(248, 249, 250);  // Slightly lighter gray
+        doc.rect(14, y - 4, 269, rowHeight, 'F');
+      } else {
+        doc.setFillColor(255, 255, 255);  // White for odd rows
+        doc.rect(14, y - 4, 269, rowHeight, 'F');
+      }
+      
+      // Starting Y position for text in this row
+      const textStartY = y;
+      
+      // Draw each column with wrapped text
+      doc.setTextColor(44, 62, 80);
+      
+      // Name column
+      nameLines.forEach((line, idx) => {
+        doc.text(line, 16, textStartY + (idx * 5));
+      });
+      
+      // Email column
+      emailLines.forEach((line, idx) => {
+        doc.text(line, 60, textStartY + (idx * 5));
+      });
+      
+      // Attending status with color
+      if (r.attending) {
+        doc.setTextColor(46, 125, 50); // Green
+        doc.text("Attending", 110, textStartY);
+      } else {
+        doc.setTextColor(198, 40, 40); // Red
+        doc.text("Not Attending", 110, textStartY);
+      }
+      
+      // Reset color for other fields
+      doc.setTextColor(44, 62, 80);
+      
+      // Plus One
+      doc.text(r.has_plus_one ? "Yes" : "No", 135, textStartY);
+      
+      // Kids column with wrapping
+      kidsLines.forEach((line, idx) => {
+        doc.text(line, 155, textStartY + (idx * 5));
+      });
+      
+      // Dietary column with wrapping
+      dietaryLines.forEach((line, idx) => {
+        doc.text(line, 195, textStartY + (idx * 5));
+      });
+      
+      // Songs column with wrapping
+      songsLines.forEach((line, idx) => {
+        doc.text(line, 240, textStartY + (idx * 5));
+      });
+      
+      // Move to next row
+      y += rowHeight;
+    });
+    
+    // Footer on last page (adjusted for landscape)
+    const footerY = Math.min(205, y + 10);
+    doc.setFontSize(8);
+    doc.setTextColor(189, 195, 199);
+    doc.text("Wedding RSVP System", 148.5, footerY, { align: "center" });
+    
+    doc.save("wedding-rsvps.pdf");
   };
 
   const openEdit = (row) => setEditing(row);
